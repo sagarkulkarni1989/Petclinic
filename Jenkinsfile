@@ -39,18 +39,29 @@ pipeline {
                  -Dsonar.projectKey=Petclinic '''
                  
                 }
+                timeout(time: 2, unit: 'MINUTES') {
+                    script {
+                         waitForQualityGate abortPipeline: true
+                    }
+                }
             }
            
         }
-        // stage("OWASP Dependency Check"){
-        //     steps{
-        //         dependencyCheck additionalArguments: '--scan ./ --format HTML ', odcInstallation: 'DP-Check'
-        //         dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-        //     }
-        // }
+        stage("OWASP Dependency Check"){
+            steps{
+                dependencyCheck additionalArguments: '--scan ./ --format HTML ', odcInstallation: 'DP-Check'
+                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+            }
+        }
         stage("Build"){
             steps{
                 sh " mvn clean install"
+            }
+        }
+        
+        stage("Trivy"){
+            steps{
+                sh " bash trivy-docker-image-scan.sh"
             }
         }
         stage("Docker Build"){
@@ -67,10 +78,10 @@ pipeline {
                 }
             }
         }
-        stage('Deploy using Docker') {
-            steps {
-                sh "docker run -d --name pet1 -p 8082:8082 gita/petclinic:latest"
-            }
-        }
+        // stage('Deploy using Docker') {
+        //     steps {
+        //         sh "docker run -d --name pet1 -p 8082:8082 gita/petclinic:latest"
+        //     }
+        // }
     }
 }
